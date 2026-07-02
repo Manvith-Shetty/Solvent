@@ -69,9 +69,166 @@ body {
   animation: live-pulse 2.4s ease-in-out infinite;
 }
 
+/*
+  ZK pipeline (hero): one 9s storytelling loop, ledger scan → proof travels →
+  contract verifies → attestation lights up. The resting state (and
+  prefers-reduced-motion) shows the completed flow with travel dots hidden.
+*/
+@keyframes zkp-scan {
+  0%,
+  14%,
+  100% {
+    opacity: 0.45;
+  }
+  4%,
+  9% {
+    opacity: 1;
+  }
+}
+
+.zkp-scan {
+  animation: zkp-scan 9s ease-in-out infinite;
+  animation-delay: calc(var(--zkp-i, 0) * 0.4s);
+}
+
+@keyframes zkp-travel-1 {
+  0%,
+  15% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  17%,
+  25% {
+    opacity: 1;
+  }
+  27%,
+  100% {
+    opacity: 0;
+    transform: translateX(calc(100% - 0.25rem));
+  }
+}
+
+@keyframes zkp-travel-2 {
+  0%,
+  38% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  40%,
+  48% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: translateX(calc(100% - 0.25rem));
+  }
+}
+
+@keyframes zkp-travel-3 {
+  0%,
+  60% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  62%,
+  68% {
+    opacity: 1;
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: translateX(calc(100% - 0.25rem));
+  }
+}
+
+.zkp-dot1,
+.zkp-dot2,
+.zkp-dot3 {
+  opacity: 0;
+}
+
+.zkp-dot1 {
+  animation: zkp-travel-1 9s linear infinite;
+}
+
+.zkp-dot2 {
+  animation: zkp-travel-2 9s linear infinite;
+}
+
+.zkp-dot3 {
+  animation: zkp-travel-3 9s linear infinite;
+}
+
+@keyframes zkp-proof-pulse {
+  0%,
+  27%,
+  37%,
+  100% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  30%,
+  34% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.zkp-proof-glyph {
+  animation: zkp-proof-pulse 9s ease-in-out infinite;
+}
+
+@keyframes zkp-verify-ring {
+  0%,
+  50% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  54% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  60%,
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+.zkp-ring {
+  opacity: 0;
+  animation: zkp-verify-ring 9s ease-in-out infinite;
+}
+
+@keyframes zkp-result-glow {
+  0% {
+    opacity: 1;
+  }
+  8%,
+  70% {
+    opacity: 0.4;
+  }
+  78%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.zkp-result {
+  animation: zkp-result-glow 9s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise,
-  .live-pulse {
+  .live-pulse,
+  .zkp-scan,
+  .zkp-dot1,
+  .zkp-dot2,
+  .zkp-dot3,
+  .zkp-proof-glyph,
+  .zkp-ring,
+  .zkp-result {
     animation: none;
   }
 }

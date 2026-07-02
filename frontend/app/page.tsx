@@ -6,6 +6,7 @@ import CustomerCheck from "./components/CustomerCheck";
 import FraudDemo from "./components/FraudDemo";
 import Leaderboard from "./components/Leaderboard";
 import LiveStatus from "./components/LiveStatus";
+import ZkPipeline from "./components/ZkPipeline";
 import {
   CompanyData,
   coverageRatio,
@@ -153,7 +154,7 @@ export default function Home() {
 
       <main id="top" className="flex-1">
         {/* Hero */}
-        <section className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-center lg:gap-16 lg:pb-20">
+        <section className="mx-auto grid max-w-6xl gap-10 px-4 pb-8 pt-14 sm:px-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-center lg:gap-16 lg:pb-10">
           <div>
             <p className="rise font-mono text-xs uppercase tracking-[0.2em] text-emerald-400">
               Confidential proof of reserves
@@ -192,6 +193,14 @@ export default function Home() {
           </div>
           <LiveStatus companies={companies} />
         </section>
+
+        {/* ZK pipeline: how a solvency proof moves, animated */}
+        <div
+          className="rise mx-auto max-w-6xl px-4 pb-10 sm:px-6"
+          style={{ "--rise-i": 4 } as React.CSSProperties}
+        >
+          <ZkPipeline />
+        </div>
 
         {/* Active insolvency alert */}
         {insolvent.length > 0 && (
