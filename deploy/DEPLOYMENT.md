@@ -13,16 +13,17 @@ from the reference run used in the demo video.
 
 ## Transactions
 
-| Step               | Tx hash                                                            |
-| ------------------ | ------------------------------------------------------------------ |
-| Upload WASM        | `1481d19dd031f12569c4c6f78c532f6851a726d1e37bafa8fea726aa6bd441c6` |
-| Deploy             | `69ea80a71bf9f960155e9e4e2e9176b564c2557fa24a314d890038cb28861b8a` |
-| `init`             | `13b1c12cbe11e4e67f95b6184c7759315f0c671b24ac4356c5b674f2a01a0221` |
-| `attest` (SOLVENT) | `5da0d117a12be1490232f001697fae73860b8c6c2b7b83ab0cc62180d1de6649` |
+| Step                          | Tx hash                                                            |
+| ----------------------------- | ------------------------------------------------------------------ |
+| Upload WASM                   | `1481d19dd031f12569c4c6f78c532f6851a726d1e37bafa8fea726aa6bd441c6` |
+| Deploy                        | `69ea80a71bf9f960155e9e4e2e9176b564c2557fa24a314d890038cb28861b8a` |
+| `init`                        | `13b1c12cbe11e4e67f95b6184c7759315f0c671b24ac4356c5b674f2a01a0221` |
+| `attest` (SOLVENT, total=35B) | `5da0d117a12be1490232f001697fae73860b8c6c2b7b83ab0cc62180d1de6649` |
+| `attest` (SOLVENT, total=29B) | `ddd387692d9f68b133c9f9a25aad42bdd1846f8636e5189ff16e7ca6ab9e7b6e` |
 
 Explorer: <https://stellar.expert/explorer/testnet/contract/CBNMJDIEVKLVP2N6XVUCWDQATOXUVQ743C6W3BYYJMIMNFPBRWWGNLJG>
 
-## Result of the honest attestation
+## Result of the honest attestation (seq 1 — original balances)
 
 ```json
 {
@@ -45,7 +46,32 @@ Event: Attested (attested),
   solvent: true
 ```
 
-## Result of the fraudulent attestation
+## Result of the honest attestation (seq 2 — tweaked balances)
+
+After changing customer balances in `circuits/input.json` and re-proving with the saved zkey:
+
+```json
+{
+  "ledger": 3393034,
+  "reserve": "99944449514",
+  "seq": 2,
+  "solvent": true,
+  "timestamp": 1782980009,
+  "total_liabilities": "29000000000"
+}
+```
+
+Event emitted:
+
+```
+Event: Attested (attested),
+  issuer: "GDDSIZGEJ22PMJRANONGUFXSZM744RGJBMETCHFLSEJTMZ6A6E226YC7",
+  total_liabilities: "29000000000",
+  reserve: "99944449514",
+  solvent: true
+```
+
+## Result of the fraudulent attestation (rejected)
 
 Attesting an **understated** total (`total - 1`, unmatched by the proof) is
 rejected by the on-chain verifier:

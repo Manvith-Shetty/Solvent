@@ -96,11 +96,12 @@ e(-A, B) · e(alpha, beta) · e(vk_x, gamma) · e(C, delta) == 1
 
 ## Live on testnet
 
-|                    |                                                                                                                               |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| Contract           | [`CBNMJDIE…GNLJG`](https://stellar.expert/explorer/testnet/contract/CBNMJDIEVKLVP2N6XVUCWDQATOXUVQ743C6W3BYYJMIMNFPBRWWGNLJG) |
-| Honest attestation | `reserve = 99,944,472,388` stroops ≥ `total = 35,000,000,000` → **solvent: true**                                             |
-| Fraud attempt      | understated total → **`InvalidProof`** (rejected on-chain)                                                                    |
+|                            |                                                                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Contract                   | [`CBNMJDIE…GNLJG`](https://stellar.expert/explorer/testnet/contract/CBNMJDIEVKLVP2N6XVUCWDQATOXUVQ743C6W3BYYJMIMNFPBRWWGNLJG) |
+| Honest attestation (seq 1) | `reserve = 99,944,472,388` stroops ≥ `total = 35,000,000,000` → **solvent: true**                                             |
+| Honest attestation (seq 2) | `reserve = 99,944,449,514` stroops ≥ `total = 29,000,000,000` → **solvent: true**                                             |
+| Fraud attempt              | understated total → **`InvalidProof`** (rejected on-chain)                                                                    |
 
 Full addresses, tx hashes and raw output: [`deploy/DEPLOYMENT.md`](deploy/DEPLOYMENT.md).
 
