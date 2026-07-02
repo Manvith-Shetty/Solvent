@@ -10,72 +10,80 @@ export default function CustomerCheck({
   att: Attestation | null;
   companyName?: string;
 }) {
-  const [inputBalance, setInputBalance] = useState("");
-  const [result, setResult] = useState<"included" | "excluded" | null>(null);
+  const [value, setValue] = useState("");
+  const [result, setResult] = useState<"included" | "excluded" | "invalid" | null>(null);
 
-  if (!att) return null;
+  if (!att) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 text-center">
+        <p className="text-sm text-zinc-500">
+          Waiting for live attestation data before balances can be checked.
+        </p>
+      </div>
+    );
+  }
 
   const totalStroops = parseFloat(att.total_liabilities);
-  const maxBalance = totalStroops;
 
-  function handleCheck() {
-    const val = parseFloat(inputBalance);
-    if (isNaN(val) || val <= 0) return;
-
-    // The customer's balance could be anywhere from 1 to the total
-    // Since we don't have the actual list (it's private!), we check if
-    // the entered amount is plausibly included (≤ total and reasonable)
-    if (val > 0 && val <= maxBalance) {
-      setResult("included");
-    } else {
-      setResult("excluded");
+  function check() {
+    const val = Number(value);
+    if (!Number.isFinite(val) || val <= 0) {
+      setResult("invalid");
+      return;
     }
+    setResult(val <= totalStroops ? "included" : "excluded");
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-      <h3 className="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-        🧑 Customer Balance Check
-      </h3>
-      <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
-        The issuer&apos;s total proven liabilities are{" "}
-        <strong>{formatStroops(att.total_liabilities)} XLM</strong>. Enter a balance to verify it
-        could be included.
+    <div className="flex h-full flex-col rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+      <h3 className="text-lg font-semibold tracking-tight text-zinc-100">Check your balance</h3>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+        {companyName ?? "The top-ranked issuer"} has proven total liabilities of{" "}
+        <span className="font-mono text-zinc-200">{formatStroops(att.total_liabilities)} XLM</span>.
+        Enter a balance to confirm it could fit inside that total.
       </p>
 
-      <div className="flex items-center gap-3">
+      <div className="mt-5">
+        <label htmlFor="customer-balance" className="block text-sm font-medium text-zinc-300">
+          Balance in stroops
+        </label>
         <input
+          id="customer-balance"
           type="number"
-          placeholder="Enter balance in stroops (e.g. 5000000000)"
-          value={inputBalance}
+          inputMode="numeric"
+          placeholder="2500000000"
+          value={value}
           onChange={(e) => {
-            setInputBalance(e.target.value);
+            setValue(e.target.value);
             setResult(null);
           }}
-          className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+          className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3.5 py-2.5 font-mono text-sm text-zinc-100 placeholder:text-zinc-600"
         />
+        <p className="mt-2 text-xs text-zinc-500">1 XLM = 10,000,000 stroops.</p>
+        {result === "invalid" && (
+          <p className="mt-2 text-xs text-red-400">Enter a positive number of stroops.</p>
+        )}
+      </div>
+
+      <div className="mt-4">
         <button
-          onClick={handleCheck}
-          disabled={!inputBalance}
-          className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          onClick={check}
+          disabled={!value}
+          className="rounded-lg bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300 active:scale-[0.98] disabled:opacity-50"
         >
-          Check
+          Check inclusion
         </button>
       </div>
 
       {result === "included" && (
-        <div className="mt-4 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-800">
-          ✅ This balance <strong>could be included</strong> in the attested total (it is ≤ the
-          total liabilities of {formatStroops(att.total_liabilities)} XLM).
-          <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-500">
-            In production, you would verify a Merkle inclusion proof to be certain.
-          </p>
+        <div className="rise mt-5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
+          This balance fits inside the proven total. In production you would confirm inclusion
+          with a Merkle proof.
         </div>
       )}
       {result === "excluded" && (
-        <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-800">
-          ❌ This balance <strong>exceeds</strong> the total proven liabilities. It cannot be part
-          of this attestation.
+        <div className="rise mt-5 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+          This balance exceeds the proven total, so it cannot be part of this attestation.
         </div>
       )}
     </div>

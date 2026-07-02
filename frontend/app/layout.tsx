@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Solvent — Confidential Proof-of-Reserves on Stellar",
+  title: "Solvent: Live Solvency Leaderboard and Alerts on Stellar",
   description:
-    "An issuer proves on-chain reserves ≥ customer liabilities without revealing a single customer balance, verified inside a Soroban smart contract on Stellar.",
+    "Live proof-of-reserves rankings for Stellar issuers. Groth16 proofs verified by a Soroban contract show reserves cover liabilities without revealing a single customer balance.",
 };
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col bg-zinc-950 text-zinc-100">{children}</body>
     </html>
   );
 }

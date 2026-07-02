@@ -4,50 +4,43 @@ import { useState } from "react";
 import { simulateFraud } from "../lib/stellar";
 
 export default function FraudDemo() {
-  const [result, setResult] = useState<{
-    result: "rejected";
-    message: string;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
 
-  async function handleFraud() {
-    setLoading(true);
-    setResult(null);
+  async function attempt() {
+    setRunning(true);
+    setMessage(null);
     const res = await simulateFraud();
-    setResult(res);
-    setLoading(false);
+    setMessage(res.message);
+    setRunning(false);
   }
 
   return (
-    <div className="rounded-2xl border border-red-200 bg-white p-6 dark:border-red-800 dark:bg-zinc-900">
-      <h3 className="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-        ⚡ Fraud Detection Demo
+    <div className="flex h-full flex-col rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+      <h3 className="text-lg font-semibold tracking-tight text-zinc-100">
+        The proof is load-bearing
       </h3>
-      <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
-        Click the button to simulate an issuer trying to understate their liabilities by 1 stroop.
-        The contract will reject the proof — proving the ZK is load-bearing.
+      <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-zinc-400">
+        Simulate an issuer understating liabilities by a single stroop. The Groth16 proof commits
+        to the honest total, so the contract rejects the claim.
       </p>
-
-      <button
-        onClick={handleFraud}
-        disabled={loading}
-        className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 disabled:opacity-50"
-      >
-        {loading ? (
-          <>
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            Simulating…
-          </>
-        ) : (
-          "🚫 Attempt Fraud"
-        )}
-      </button>
-
-      {result && (
-        <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm font-mono text-red-700 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-800">
-          <div>{result.message}</div>
-        </div>
+      <div className="mt-5">
+        <button
+          onClick={attempt}
+          disabled={running}
+          className="rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/20 active:scale-[0.98] disabled:opacity-50"
+        >
+          {running ? "Verifying proof..." : "Attempt fraud"}
+        </button>
+      </div>
+      {message && (
+        <pre className="rise mt-5 whitespace-pre-wrap rounded-lg border border-red-500/30 bg-red-500/10 p-4 font-mono text-xs leading-relaxed text-red-300">
+          {message}
+        </pre>
       )}
+      <p className="mt-auto pt-5 text-xs text-zinc-500">
+        Reproduces the on-chain result observed in contract tests and the live testnet deployment.
+      </p>
     </div>
   );
 }

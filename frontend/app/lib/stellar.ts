@@ -1,4 +1,11 @@
-import { rpc, Contract, TransactionBuilder, Networks, scValToNative } from "@stellar/stellar-sdk";
+import {
+  rpc,
+  xdr,
+  Contract,
+  TransactionBuilder,
+  Networks,
+  scValToNative,
+} from "@stellar/stellar-sdk";
 
 const RPC_URL = "https://soroban-testnet.stellar.org";
 
@@ -66,31 +73,23 @@ function createServer() {
   return new rpc.Server(RPC_URL);
 }
 
-function getSimResult(
-  result: rpc.Api.SimulateTransactionResponse,
-): { retval: any; auth: any[] } | null {
+function getSimResult(result: rpc.Api.SimulateTransactionResponse): { retval: xdr.ScVal } | null {
   if ("error" in result || !("result" in result)) return null;
-  const r = (result as any).result;
+  const r = (result as rpc.Api.SimulateTransactionSuccessResponse).result;
   return r?.retval ? r : null;
 }
 
-function parseAttestationVec(val: any): Attestation | null {
-  const arm = typeof val["arm"] === "function" ? val["arm"]() : null;
-  if (arm === "void") return null;
-
-  const att = scValToNative(val);
-  if (!att) return null;
-
-  const data = Array.isArray(att)
+function normalizeAttestation(raw: unknown): Attestation {
+  const data = Array.isArray(raw)
     ? {
-        total_liabilities: String(att[0] ?? "0"),
-        reserve: String(att[1] ?? "0"),
-        solvent: Boolean(att[2]),
-        timestamp: Number(att[3] ?? 0),
-        ledger: Number(att[4] ?? 0),
-        seq: Number(att[5] ?? 0),
+        total_liabilities: raw[0],
+        reserve: raw[1],
+        solvent: raw[2],
+        timestamp: raw[3],
+        ledger: raw[4],
+        seq: raw[5],
       }
-    : att;
+    : ((raw ?? {}) as Record<string, unknown>);
 
   return {
     total_liabilities: String(data.total_liabilities ?? "0"),
@@ -100,6 +99,15 @@ function parseAttestationVec(val: any): Attestation | null {
     ledger: Number(data.ledger ?? 0),
     seq: Number(data.seq ?? 0),
   };
+}
+
+function parseAttestationVec(val: xdr.ScVal): Attestation | null {
+  if (val.switch().name === "scvVoid") return null;
+
+  const att: unknown = scValToNative(val);
+  if (!att) return null;
+
+  return normalizeAttestation(att);
 }
 
 export async function getLatestAttestation(contractId: string): Promise<Attestation | null> {
@@ -150,29 +158,10 @@ export async function getAttestationHistory(contractId: string): Promise<Attesta
     const simResult = getSimResult(result);
     if (!simResult) return [];
 
-    const raw = scValToNative(simResult.retval);
+    const raw: unknown = scValToNative(simResult.retval);
     if (!Array.isArray(raw)) return [];
 
-    return raw.map((item: any) => {
-      const data = Array.isArray(item)
-        ? {
-            total_liabilities: String(item[0] ?? "0"),
-            reserve: String(item[1] ?? "0"),
-            solvent: Boolean(item[2]),
-            timestamp: Number(item[3] ?? 0),
-            ledger: Number(item[4] ?? 0),
-            seq: Number(item[5] ?? 0),
-          }
-        : item;
-      return {
-        total_liabilities: String(data.total_liabilities ?? "0"),
-        reserve: String(data.reserve ?? "0"),
-        solvent: Boolean(data.solvent),
-        timestamp: Number(data.timestamp ?? 0),
-        ledger: Number(data.ledger ?? 0),
-        seq: Number(data.seq ?? 0),
-      };
-    });
+    return raw.map(normalizeAttestation);
   } catch (e) {
     console.error(`Error fetching attestation history for ${contractId}:`, e);
     return [];
@@ -183,11 +172,33 @@ export async function simulateFraud(): Promise<{
   result: "rejected";
   message: string;
 }> {
+  // Short pause so the pending state is visible before the verdict lands.
+  await new Promise((resolve) => setTimeout(resolve, 700));
   return {
     result: "rejected",
     message:
-      "REJECTED ✓ InvalidProof — the ZK proof is cryptographically bound to the honest total. The contract rejected the understated claim on-chain (verified in tests and live deployment).",
+      "InvalidProof: the submitted proof does not match the claimed total.\nThe Groth16 proof commits to the honest sum of liabilities, so the understated claim was rejected on-chain.",
   };
+}
+
+export interface FeedEvent {
+  company: CompanyInfo;
+  att: Attestation;
+}
+
+export async function fetchAlertFeed(limit = 12): Promise<FeedEvent[]> {
+  const results = await Promise.allSettled(
+    COMPANIES.map(async (company) => {
+      const history = await getAttestationHistory(company.contractId);
+      return history.map((att) => ({ company, att }));
+    }),
+  );
+
+  return results
+    .filter((r): r is PromiseFulfilledResult<FeedEvent[]> => r.status === "fulfilled")
+    .flatMap((r) => r.value)
+    .sort((a, b) => b.att.timestamp - a.att.timestamp || b.att.seq - a.att.seq)
+    .slice(0, limit);
 }
 
 export async function fetchAllCompanies(): Promise<CompanyData[]> {
@@ -205,14 +216,33 @@ export async function fetchAllCompanies(): Promise<CompanyData[]> {
 
 export function formatStroops(stroops: string): string {
   const num = parseFloat(stroops);
-  return (num / 10_000_000).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 7,
+  return (num / 10_000_000).toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   });
+}
+
+export function formatXLMCompact(stroops: string): string {
+  const xlm = parseFloat(stroops) / 10_000_000;
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(xlm);
 }
 
 export function formatTimestamp(ts: number): string {
   return new Date(ts * 1000).toLocaleString();
+}
+
+export function relativeTime(ts: number): string {
+  const seconds = Math.max(1, Math.floor(Date.now() / 1000 - ts));
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 export function explorerUrl(type: "contract" | "tx", id: string): string {
