@@ -6,6 +6,7 @@ export interface CompanyInfo {
   id: string;
   name: string;
   contractId: string;
+  token?: string;
 }
 
 export const COMPANIES: CompanyInfo[] = [
@@ -26,8 +27,13 @@ export const COMPANIES: CompanyInfo[] = [
   },
   {
     id: "company-d",
-    name: "GoldReserve (GoldToken)",
-    contractId: "CADK2XJ62X5U633FCXBWCSJPJGCBBOFRABQAZGC7YNKRGWGT4BNUFKAG",
+    name: "TrustLine Capital",
+    contractId: "CCIOFFLRX5XCUQRA2T6RRVIKEF7FSOJKMKZ5QUQOI2C7L2YQ3DTQ2RFY",
+  },
+  {
+    id: "company-e",
+    name: "VaultSphere",
+    contractId: "CAH7KP6ZQ32TK3GZC5HKV6XE7JGYCKD7ESVOFWWZOJPM4Y7MKXO2JAXK",
   },
 ];
 
@@ -100,8 +106,9 @@ export async function getLatestAttestation(contractId: string): Promise<Attestat
   try {
     const server = createServer();
     const contract = new Contract(contractId);
+    // Use a known funded testnet account for simulating read-only calls
     const account = await server.getAccount(
-      "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      "GCUFONGLW3MR6ZSE6U5VEEM337BMZ6PW6Q4IJGQ6I3JMOHWBZK3F2C4O",
     );
 
     const tx = new TransactionBuilder(account, {
@@ -128,7 +135,7 @@ export async function getAttestationHistory(contractId: string): Promise<Attesta
     const server = createServer();
     const contract = new Contract(contractId);
     const account = await server.getAccount(
-      "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      "GCUFONGLW3MR6ZSE6U5VEEM337BMZ6PW6Q4IJGQ6I3JMOHWBZK3F2C4O",
     );
 
     const tx = new TransactionBuilder(account, {
