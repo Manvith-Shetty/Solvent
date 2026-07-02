@@ -1,12 +1,12 @@
 # Solvent — Confidential Proof-of-Reserves on Stellar
 
 > An issuer proves **on-chain reserves ≥ customer liabilities** without revealing
-> a single customer balance. The reserve is a *real* on-chain token balance (no
+> a single customer balance. The reserve is a _real_ on-chain token balance (no
 > oracle to trust); the liabilities are proven in zero-knowledge and verified
 > **inside a Soroban smart contract** on Stellar.
 
 Built for **Stellar Hacks: Real-World ZK**. Live on testnet — the full
-happy-path *and* a fraud-rejection are demonstrated on-chain in
+happy-path _and_ a fraud-rejection are demonstrated on-chain in
 [`deploy/DEPLOYMENT.md`](deploy/DEPLOYMENT.md).
 
 ---
@@ -14,13 +14,13 @@ happy-path *and* a fraud-rejection are demonstrated on-chain in
 ## The problem
 
 Every time an exchange or stablecoin issuer collapses (FTX, Celsius, …), the
-same question comes too late: *did they actually hold what they owed customers?*
+same question comes too late: _did they actually hold what they owed customers?_
 
 The industry answer is "Proof of Reserves." Today it is broken in two ways:
 
 1. **It leaks everyone's balances.** Naive Merkle-tree PoR publishes enough to
    let competitors and attackers reconstruct customer holdings.
-2. **The liabilities side is unverifiable.** An issuer can quietly *understate*
+2. **The liabilities side is unverifiable.** An issuer can quietly _understate_
    what it owes — showing a big reserve while hiding the true, larger liability.
    The reserve number is auditable; the liability number is a spreadsheet you're
    asked to trust.
@@ -29,17 +29,17 @@ The industry answer is "Proof of Reserves." Today it is broken in two ways:
 
 Split the equation `reserve ≥ liabilities` by what each side needs:
 
-| Side | Property needed | How Solvent does it |
-|------|-----------------|---------------------|
-| **Reserve** | public, tamper-proof, no oracle | Read a **real on-chain token balance** on Stellar (native XLM / USDC Stellar Asset Contract) directly from the contract. |
-| **Liabilities** | private, yet provably honest | A **Groth16 zero-knowledge proof** that a hidden customer ledger sums to a public `total`, with every balance range-checked. |
+| Side            | Property needed                 | How Solvent does it                                                                                                          |
+| --------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Reserve**     | public, tamper-proof, no oracle | Read a **real on-chain token balance** on Stellar (native XLM / USDC Stellar Asset Contract) directly from the contract.     |
+| **Liabilities** | private, yet provably honest    | A **Groth16 zero-knowledge proof** that a hidden customer ledger sums to a public `total`, with every balance range-checked. |
 
 The contract verifies the proof, reads the live reserve, and records whether
 `reserve ≥ total` — **without ever seeing an individual customer balance.**
 
 ### Why the ZK is load-bearing (not decoration)
 
-The public `total` is *cryptographically bound* to the proof. The circuit
+The public `total` is _cryptographically bound_ to the proof. The circuit
 enforces:
 
 - **Sum:** `total = Σ balances[i]` — the published liability equals the real sum.
@@ -56,7 +56,7 @@ becomes an unverifiable assertion again.
 
 - The proof is verified with Stellar's **native BLS12-381 host functions**
   (`env.crypto().bls12_381()`, CAP-0059, Protocol 22+) — the pairing check runs
-  *in-contract*, cheaply, no verifier bloat.
+  _in-contract_, cheaply, no verifier bloat.
 - The reserve is a live **Stellar Asset Contract** balance read via a
   cross-contract `TokenClient::balance()` call — the "no oracle" property comes
   straight from Stellar's asset model.
@@ -96,11 +96,11 @@ e(-A, B) · e(alpha, beta) · e(vk_x, gamma) · e(C, delta) == 1
 
 ## Live on testnet
 
-| | |
-|---|---|
-| Contract | [`CBNMJDIE…GNLJG`](https://stellar.expert/explorer/testnet/contract/CBNMJDIEVKLVP2N6XVUCWDQATOXUVQ743C6W3BYYJMIMNFPBRWWGNLJG) |
-| Honest attestation | `reserve = 99,944,472,388` stroops ≥ `total = 35,000,000,000` → **solvent: true** |
-| Fraud attempt | understated total → **`InvalidProof`** (rejected on-chain) |
+|                    |                                                                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Contract           | [`CBNMJDIE…GNLJG`](https://stellar.expert/explorer/testnet/contract/CBNMJDIEVKLVP2N6XVUCWDQATOXUVQ743C6W3BYYJMIMNFPBRWWGNLJG) |
+| Honest attestation | `reserve = 99,944,472,388` stroops ≥ `total = 35,000,000,000` → **solvent: true**                                             |
+| Fraud attempt      | understated total → **`InvalidProof`** (rejected on-chain)                                                                    |
 
 Full addresses, tx hashes and raw output: [`deploy/DEPLOYMENT.md`](deploy/DEPLOYMENT.md).
 
@@ -150,11 +150,11 @@ deploy/deploy_testnet.sh
 
 The three tests in step 3 encode the whole story:
 
-| Test | Asserts |
-|------|---------|
-| `solvent_when_reserve_covers_liabilities` | valid proof + reserve ≥ total ⇒ `solvent = true` |
-| `insolvent_is_detected_but_proof_still_valid` | *honest* proof, reserve < total ⇒ `solvent = false` (issuer can't hide insolvency) |
-| `cannot_understate_liabilities` | understated `total` ⇒ `InvalidProof` (issuer can't lie) |
+| Test                                          | Asserts                                                                            |
+| --------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `solvent_when_reserve_covers_liabilities`     | valid proof + reserve ≥ total ⇒ `solvent = true`                                   |
+| `insolvent_is_detected_but_proof_still_valid` | _honest_ proof, reserve < total ⇒ `solvent = false` (issuer can't hide insolvency) |
+| `cannot_understate_liabilities`               | understated `total` ⇒ `InvalidProof` (issuer can't lie)                            |
 
 ---
 
@@ -164,15 +164,17 @@ This is a hackathon **proof-of-concept**, deliberately small where it doesn't
 change the core claim. What's real vs. what's next:
 
 **Real today**
+
 - End-to-end ZK: circuit → proof → **on-chain BLS12-381 verification** on Stellar.
 - Reserve as a genuine on-chain token balance (no oracle).
 - Fraud (understated liabilities) provably rejected on live testnet.
 
 **Known limitations**
+
 - **Fixed ledger size `N = 8`.** The circuit hard-codes 8 balances so the setup
   is fast to demo. Production needs a **Merkle-sum-tree** so the proof size /
   setup are independent of customer count (scales to millions).
-- **No per-customer inclusion proof yet.** A customer can't *yet* independently
+- **No per-customer inclusion proof yet.** A customer can't _yet_ independently
   verify their balance is in the attested `total`. The Merkle-sum-tree design
   gives each customer a private inclusion proof — the missing half of a complete
   PoR/PoL system.
@@ -183,6 +185,7 @@ change the core claim. What's real vs. what's next:
 - Not audited.
 
 **Roadmap**
+
 1. Merkle-sum-tree liabilities + per-customer inclusion proofs.
 2. Multiple reserve tokens / multi-asset solvency in one attestation.
 3. Optional auditor "view key" for regulator-grade selective disclosure.
@@ -195,4 +198,4 @@ change the core claim. What's real vs. what's next:
 Circom 2 · snarkjs · Groth16 · **BLS12-381** · arkworks · Soroban
 (`soroban-sdk` 25) · Stellar Asset Contract · Stellar CLI.
 
-*Not audited. For the Stellar "Real-World ZK" hackathon.*
+_Not audited. For the Stellar "Real-World ZK" hackathon._
