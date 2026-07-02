@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { Attestation, formatStroops } from "../lib/stellar";
 
-export default function CustomerCheck({ att }: { att: Attestation | null }) {
+export default function CustomerCheck({
+  att,
+  companyName,
+}: {
+  att: Attestation | null;
+  companyName?: string;
+}) {
   const [inputBalance, setInputBalance] = useState("");
   const [result, setResult] = useState<"included" | "excluded" | null>(null);
 

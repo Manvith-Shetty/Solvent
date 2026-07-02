@@ -7,8 +7,6 @@ export default function FraudDemo() {
   const [result, setResult] = useState<{
     result: "rejected";
     message: string;
-    total?: string;
-    understated?: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -47,11 +45,6 @@ export default function FraudDemo() {
 
       {result && (
         <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm font-mono text-red-700 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-800">
-          {result.total && result.understated && (
-            <div className="mb-2 text-xs text-zinc-500">
-              Claimed total: {result.understated} (honest total: {result.total})
-            </div>
-          )}
           <div>{result.message}</div>
         </div>
       )}

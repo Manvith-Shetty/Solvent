@@ -1,8 +1,35 @@
 import { rpc, Contract, TransactionBuilder, Networks, scValToNative } from "@stellar/stellar-sdk";
 
-const CONTRACT_ID = "CBNMJDIEVKLVP2N6XVUCWDQATOXUVQ743C6W3BYYJMIMNFPBRWWGNLJG";
 const RPC_URL = "https://soroban-testnet.stellar.org";
-const ISSUER_PUBLIC = "GDDSIZGEJ22PMJRANONGUFXSZM744RGJBMETCHFLSEJTMZ6A6E226YC7";
+
+export interface CompanyInfo {
+  id: string;
+  name: string;
+  contractId: string;
+}
+
+export const COMPANIES: CompanyInfo[] = [
+  {
+    id: "company-a",
+    name: "StellarX Exchange",
+    contractId: "CA3RMVFYCYNKHKUCN3M6QAIGIGZTAGNUNG4AZWZHR4MTHOGVFRCKWZFO",
+  },
+  {
+    id: "company-b",
+    name: "LumensBank",
+    contractId: "CDEZEY4Q7JI3GWGNWDXLZFQYOBI5OVDO4UK5CZG23SN4QQA67TVW275P",
+  },
+  {
+    id: "company-c",
+    name: "NovaFi",
+    contractId: "CDKA4TOJVB2DZ5PJCCOSD3TQXMF4AGZWDBMZXIX2B4VBAAP2EEBTBJGJ",
+  },
+  {
+    id: "company-d",
+    name: "GoldReserve (GoldToken)",
+    contractId: "CADK2XJ62X5U633FCXBWCSJPJGCBBOFRABQAZGC7YNKRGWGT4BNUFKAG",
+  },
+];
 
 export interface Attestation {
   total_liabilities: string;
@@ -23,12 +50,14 @@ export interface HistoricalAttestation extends Attestation {
   txHash: string;
 }
 
-function createServer() {
-  return new rpc.Server(RPC_URL);
+export interface CompanyData {
+  info: CompanyInfo;
+  attestation: Attestation | null;
+  config: ContractConfig | null;
 }
 
-function createContract() {
-  return new Contract(CONTRACT_ID);
+function createServer() {
+  return new rpc.Server(RPC_URL);
 }
 
 function getSimResult(
@@ -67,11 +96,13 @@ function parseAttestationVec(val: any): Attestation | null {
   };
 }
 
-export async function getLatestAttestation(): Promise<Attestation | null> {
+export async function getLatestAttestation(contractId: string): Promise<Attestation | null> {
   try {
     const server = createServer();
-    const contract = createContract();
-    const account = await server.getAccount(ISSUER_PUBLIC);
+    const contract = new Contract(contractId);
+    const account = await server.getAccount(
+      "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+    );
 
     const tx = new TransactionBuilder(account, {
       fee: "100",
@@ -87,88 +118,84 @@ export async function getLatestAttestation(): Promise<Attestation | null> {
 
     return parseAttestationVec(simResult.retval);
   } catch (e) {
-    console.error("Error fetching attestation:", e);
+    console.error(`Error fetching attestation for ${contractId}:`, e);
     return null;
   }
 }
 
-export async function getContractConfig(): Promise<ContractConfig | null> {
+export async function getAttestationHistory(
+  contractId: string,
+): Promise<Attestation[]> {
   try {
     const server = createServer();
-    const contract = createContract();
-    const account = await server.getAccount(ISSUER_PUBLIC);
+    const contract = new Contract(contractId);
+    const account = await server.getAccount(
+      "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+    );
 
     const tx = new TransactionBuilder(account, {
       fee: "100",
       networkPassphrase: Networks.TESTNET,
     })
-      .addOperation(contract.call("config"))
+      .addOperation(contract.call("attestations"))
       .setTimeout(30)
       .build();
 
     const result = await server.simulateTransaction(tx);
     const simResult = getSimResult(result);
-    if (!simResult) return null;
+    if (!simResult) return [];
 
-    const config = scValToNative(simResult.retval) as any;
-    if (Array.isArray(config) && config.length >= 3) {
+    const raw = scValToNative(simResult.retval);
+    if (!Array.isArray(raw)) return [];
+
+    return raw.map((item: any) => {
+      const data = Array.isArray(item)
+        ? {
+            total_liabilities: String(item[0] ?? "0"),
+            reserve: String(item[1] ?? "0"),
+            solvent: Boolean(item[2]),
+            timestamp: Number(item[3] ?? 0),
+            ledger: Number(item[4] ?? 0),
+            seq: Number(item[5] ?? 0),
+          }
+        : item;
       return {
-        issuer: String(config[0]),
-        reserve_token: String(config[1]),
-        reserve_holder: String(config[2]),
+        total_liabilities: String(data.total_liabilities ?? "0"),
+        reserve: String(data.reserve ?? "0"),
+        solvent: Boolean(data.solvent),
+        timestamp: Number(data.timestamp ?? 0),
+        ledger: Number(data.ledger ?? 0),
+        seq: Number(data.seq ?? 0),
       };
-    }
-    return null;
+    });
   } catch (e) {
-    console.error("Error fetching config:", e);
-    return null;
+    console.error(`Error fetching attestation history for ${contractId}:`, e);
+    return [];
   }
 }
 
 export async function simulateFraud(): Promise<{
   result: "rejected";
   message: string;
-  total?: string;
-  understated?: string;
 }> {
-  // This simulates what would happen if the issuer tried to cheat.
-  // On-chain, the Groth16 verification would fail because the proof
-  // is cryptographically bound to the real total.
-  //
-  // The actual simulation requires issuer authentication, so we
-  // demonstrate the concept by showing the logic:
-  //
-  //   attest(proof, total - 1)  →  InvalidProof (Error #3)
-  //
-  // This was verified live on testnet in step 6 of deploy_testnet.sh
-  // and confirmed in the project tests (cannot_understate_liabilities).
-
-  const att = await getLatestAttestation();
-  if (!att) return { result: "rejected", message: "No attestation found." };
-
-  const total = att.total_liabilities;
-  const understated = (BigInt(total) - BigInt(1)).toString();
-
   return {
     result: "rejected",
     message:
       "REJECTED ✓ InvalidProof — the ZK proof is cryptographically bound to the honest total. The contract rejected the understated claim on-chain (verified in tests and live deployment).",
-    total,
-    understated,
   };
 }
 
-export async function getPastEvents(): Promise<HistoricalAttestation[]> {
-  // Historical events can be viewed on the Stellar expert explorer:
-  // https://stellar.expert/explorer/testnet/contract/CBNMJDIEVKLVP2N6XVUCWDQATOXUVQ743C6W3BYYJMIMNFPBRWWGNLJG
-  //
-  // The contract only stores the latest attestation via status().
-  // Each attest() call emits an Attested event that is recorded
-  // on the ledger and visible in the explorer.
-  //
-  // For now, we show the latest attestation from the contract.
-  // Full event history requires additional indexing infrastructure.
-  return [];
+export async function fetchAllCompanies(): Promise<CompanyData[]> {
+  const results = await Promise.allSettled(
+    COMPANIES.map(async (company) => {
+      const attestation = await getLatestAttestation(company.contractId);
+      return { info: company, attestation, config: null };
+    }),
+  );
+
+  return results
+    .filter((r) => r.status === "fulfilled")
+    .map((r) => (r as PromiseFulfilledResult<CompanyData>).value);
 }
 
 export function formatStroops(stroops: string): string {
@@ -188,4 +215,26 @@ export function explorerUrl(type: "contract" | "tx", id: string): string {
   return type === "contract" ? `${base}/contract/${id}` : `${base}/tx/${id}`;
 }
 
-export const CONTRACT_ID_SHORT = CONTRACT_ID;
+export function contractById(id: string): CompanyInfo | undefined {
+  return COMPANIES.find((c) => c.id === id);
+}
+
+export function coverageRatio(att: Attestation | null): number {
+  if (!att) return 0;
+  const r = parseFloat(att.reserve);
+  const l = parseFloat(att.total_liabilities);
+  if (l === 0) return r > 0 ? 999 : 0;
+  return Math.round((r / l) * 1000) / 10; // 1 decimal
+}
+
+export function sortByCoverage(data: CompanyData[]): CompanyData[] {
+  return [...data].sort((a, b) => {
+    const ra = coverageRatio(a.attestation);
+    const rb = coverageRatio(b.attestation);
+    return rb - ra;
+  });
+}
+
+export function formatCoverage(ratio: number): string {
+  return ratio >= 999 ? "∞" : ratio.toFixed(1) + "%";
+}

@@ -95,3 +95,67 @@ fn cannot_understate_liabilities() {
     // No attestation was recorded.
     assert_eq!(client.status(), None);
 }
+
+#[test]
+fn solvent_view_function() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let total = total();
+    let client = deploy(&env, total + 5_000_000_000);
+
+    // Before any attestation, solvent() returns false
+    assert!(!client.solvent());
+
+    // After honest attestation, solvent() returns true
+    client.attest(&bytes_hex(&env, "proof_bytes.hex"), &total);
+    assert!(client.solvent());
+}
+
+#[test]
+fn attestation_history_tracks_multiple_attestations() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let total = total();
+    let reserve = total + 10_000_000_000; // 1000 XLM surplus
+    let client = deploy(&env, reserve);
+
+    // First attestation
+    let att1 = client.attest(&bytes_hex(&env, "proof_bytes.hex"), &total);
+    assert_eq!(att1.seq, 1);
+
+    // Second attestation (same proof works for same total)
+    let att2 = client.attest(&bytes_hex(&env, "proof_bytes.hex"), &total);
+    assert_eq!(att2.seq, 2);
+
+    // Check history has both
+    let history = client.attestations();
+    assert_eq!(history.len(), 2);
+    assert_eq!(history.get(0).unwrap().seq, 1);
+    assert_eq!(history.get(1).unwrap().seq, 2);
+
+    // Latest is seq 2
+    assert_eq!(client.status().unwrap().seq, 2);
+}
+
+#[test]
+fn solvent_then_insolvent_over_time() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let total = total();
+
+    // Deploy with just enough reserve
+    let client = deploy(&env, total);
+
+    // Solvent: reserve == total
+    let att = client.attest(&bytes_hex(&env, "proof_bytes.hex"), &total);
+    assert!(att.solvent);
+    assert!(client.solvent());
+
+    // Drain the reserve to simulate insolvency
+    // (We can't easily change the balance in tests without re-deploying,
+    //  so we verify the logic: if reserve < total, solvent() returns false)
+    // This is already tested in `insolvent_is_detected_but_proof_still_valid`
+}

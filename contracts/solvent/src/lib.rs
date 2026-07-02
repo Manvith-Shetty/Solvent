@@ -25,7 +25,7 @@
 use soroban_sdk::{
     contract, contracterror, contractevent, contractimpl, contracttype,
     crypto::bls12_381::{Fr, G1Affine, G2Affine},
-    token, vec, Address, Bytes, BytesN, Env, U256, Vec,
+    token, vec, Address, Bytes, BytesN, Env, Vec, U256,
 };
 
 // Blob layout (arkworks uncompressed, big-endian points):
@@ -97,6 +97,8 @@ pub struct Attested {
     pub solvent: bool,
 }
 
+const MAX_HISTORY: u32 = 20;
+
 #[contracttype]
 enum DataKey {
     Issuer,
@@ -105,6 +107,7 @@ enum DataKey {
     Vk,
     Latest,
     Count,
+    History,
 }
 
 #[contract]
@@ -190,6 +193,15 @@ impl Solvent {
         };
         store.set(&DataKey::Latest, &attestation);
         store.set(&DataKey::Count, &seq);
+
+        // Store in history (keep last MAX_HISTORY)
+        let mut history: Vec<Attestation> = store.get(&DataKey::History).unwrap_or(Vec::new(&env));
+        history.push_back(attestation.clone());
+        while history.len() > MAX_HISTORY {
+            history.remove(0); // drop oldest
+        }
+        store.set(&DataKey::History, &history);
+
         store.extend_ttl(100_000, 100_000);
 
         Attested {
@@ -205,6 +217,24 @@ impl Solvent {
     /// The most recent attestation, if any.
     pub fn status(env: Env) -> Option<Attestation> {
         env.storage().instance().get(&DataKey::Latest)
+    }
+
+    /// Returns true if the latest attestation shows the issuer is solvent.
+    /// Returns false if no attestation exists or the issuer is insolvent.
+    pub fn solvent(env: Env) -> bool {
+        env.storage()
+            .instance()
+            .get::<_, Attestation>(&DataKey::Latest)
+            .map(|a| a.solvent)
+            .unwrap_or(false)
+    }
+
+    /// All recorded attestations, newest last. Max 20 entries.
+    pub fn attestations(env: Env) -> Vec<Attestation> {
+        env.storage()
+            .instance()
+            .get(&DataKey::History)
+            .unwrap_or(Vec::new(&env))
     }
 
     /// Configured (issuer, reserve_token, reserve_holder).
