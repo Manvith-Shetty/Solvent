@@ -127,7 +127,16 @@ deploy/
 
 ---
 
-## Reproduce it end-to-end
+## Demo (one command)
+
+Run the full end-to-end demo: local proof generation, contract tests, on-chain
+verification, fraud rejection, and multi-company dashboard:
+
+```bash
+bash demo.sh
+```
+
+Or step by step:
 
 **Prerequisites:** `circom` 2.x, `snarkjs`, Rust + `wasm32v1-none` target, and the
 [`stellar` CLI](https://developers.stellar.org/docs/tools/cli) (≥ 22).
@@ -139,7 +148,7 @@ scripts/gen_proof.sh
 # 2. Pack snarkjs output into the byte blobs the contract expects
 cargo run --manifest-path tools/convert/Cargo.toml -- circuits/build
 
-# 3. Verify the on-chain verifier against the real proof (3 scenarios)
+# 3. Verify the on-chain verifier against the real proof (6 tests)
 cargo test --manifest-path contracts/solvent/Cargo.toml
 
 # 4. Build the contract wasm
@@ -147,9 +156,12 @@ stellar contract build --manifest-path contracts/solvent/Cargo.toml
 
 # 5. Deploy to testnet and run the live SOLVENT + fraud demo
 deploy/deploy_testnet.sh
+
+# 6. Start the dashboard
+cd frontend && npm run dev
 ```
 
-The three tests in step 3 encode the whole story:
+The tests encode the whole story:
 
 | Test                                          | Asserts                                                                            |
 | --------------------------------------------- | ---------------------------------------------------------------------------------- |
