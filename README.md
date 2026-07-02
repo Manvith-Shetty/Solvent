@@ -98,8 +98,8 @@ e(-A, B) · e(alpha, beta) · e(vk_x, gamma) · e(C, delta) == 1
 
 | | |
 |---|---|
-| Contract | [`CDCO5ERG…MMWSRFOV`](https://stellar.expert/explorer/testnet/contract/CDCO5ERGD2HHRJCEBJ4M4D7F52UEJNVZV3J7DXOBIU35UIGCMMWSRFOV) |
-| Honest attestation | `reserve = 99,940,447,803` stroops ≥ `total = 35,000,000,000` → **solvent: true** |
+| Contract | [`CBNMJDIE…GNLJG`](https://stellar.expert/explorer/testnet/contract/CBNMJDIEVKLVP2N6XVUCWDQATOXUVQ743C6W3BYYJMIMNFPBRWWGNLJG) |
+| Honest attestation | `reserve = 99,944,472,388` stroops ≥ `total = 35,000,000,000` → **solvent: true** |
 | Fraud attempt | understated total → **`InvalidProof`** (rejected on-chain) |
 
 Full addresses, tx hashes and raw output: [`deploy/DEPLOYMENT.md`](deploy/DEPLOYMENT.md).
