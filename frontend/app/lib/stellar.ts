@@ -4,8 +4,6 @@ import {
   TransactionBuilder,
   Networks,
   scValToNative,
-  xdr,
-  Address,
 } from "@stellar/stellar-sdk";
 
 const CONTRACT_ID = "CBNMJDIEVKLVP2N6XVUCWDQATOXUVQ743C6W3BYYJMIMNFPBRWWGNLJG";
@@ -35,8 +33,12 @@ function createContract() {
   return new Contract(CONTRACT_ID);
 }
 
-function isSimSuccess(result: any): boolean {
-  return !result.error && result.result?.retval != null;
+function getSimResult(
+  result: rpc.Api.SimulateTransactionResponse
+): { retval: any; auth: any[] } | null {
+  if ("error" in result || !("result" in result)) return null;
+  const r = (result as any).result;
+  return r?.retval ? r : null;
 }
 
 export async function getLatestAttestation(): Promise<Attestation | null> {
@@ -54,11 +56,10 @@ export async function getLatestAttestation(): Promise<Attestation | null> {
       .build();
 
     const result = await server.simulateTransaction(tx);
-    if (!isSimSuccess(result)) return null;
+    const simResult = getSimResult(result);
+    if (!simResult) return null;
 
-    const val = result.result!.retval;
-    if (!val) return null;
-
+    const val = simResult.retval;
     const arm = typeof val["arm"] === "function" ? val["arm"]() : null;
     if (arm === "void") return null;
 
@@ -105,9 +106,10 @@ export async function getContractConfig(): Promise<ContractConfig | null> {
       .build();
 
     const result = await server.simulateTransaction(tx);
-    if (!isSimSuccess(result)) return null;
+    const simResult = getSimResult(result);
+    if (!simResult) return null;
 
-    const config = scValToNative(result.result!.retval) as any;
+    const config = scValToNative(simResult.retval) as any;
     if (Array.isArray(config) && config.length >= 3) {
       return {
         issuer: String(config[0]),
