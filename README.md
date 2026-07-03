@@ -1,6 +1,6 @@
 # Solvent — Confidential Proof-of-Reserves on Stellar
 
-**Demo video:** [here](https://example.com)
+**Demo video:** [here](https://www.youtube.com/watch?v=aRc_Eb_k97c)
 
 An issuer proves **on-chain reserves ≥ customer liabilities** without revealing a single customer balance — verified inside a Soroban smart contract on Stellar using Groth16 ZK proofs and Stellar's native BLS12-381 host functions.
 
