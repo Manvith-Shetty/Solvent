@@ -40,7 +40,7 @@ The ZK is **load-bearing**: understate the total → **InvalidProof** on-chain.
 - **On-chain history** — stores last 20 attestations per contract
 - **Multi-asset** — works with XLM, USDC, or custom tokens
 - **Fraud detection** — understated liabilities → `InvalidProof`
-- **4 companies live** — 3 solvent, 1 insolvent
+- **5 companies live** — 3 solvent, 2 insolvent
 - **Dashboard** — Next.js UI with leaderboard + insolvency alerts
 
 ---
@@ -73,11 +73,6 @@ scripts/            Proving pipeline
 
 ## 🛠 Tech
 
-Circom 2 · snarkjs · Groth16 · BLS12-381 · arkworks · Soroban (soroban-sdk 25) · Stellar Asset Contract · Next.js · Tailwind
+Circom 2 · snarkjs · Groth16 · **BLS12-381** · arkworks · Soroban (`soroban-sdk` 25) · Stellar Asset Contract · Stellar CLI · Next.js · Tailwind
 
-_Not audited. Hackathon PoC._
-
-Circom 2 · snarkjs · Groth16 · **BLS12-381** · arkworks · Soroban
-(`soroban-sdk` 25) · Stellar Asset Contract · Stellar CLI.
-
-_Not audited. For the Stellar "Real-World ZK" hackathon._
+_Not audited. Hackathon PoC for Stellar "Real-World ZK"._
